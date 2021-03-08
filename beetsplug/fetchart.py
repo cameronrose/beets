@@ -34,6 +34,9 @@ from mediafile import image_mime_type
 from beets.util.artresizer import ArtResizer
 from beets.util import sorted_walk
 from beets.util import syspath, bytestring_path, py3_path
+
+from discogs_client import Release, Master, Client
+from discogs_client.exceptions import DiscogsAPIError
 import confuse
 import six
 
@@ -305,65 +308,25 @@ class RemoteArtSource(ArtSource):
 class CoverArtArchive(RemoteArtSource):
     NAME = u"Cover Art Archive"
     VALID_MATCHING_CRITERIA = ['release', 'releasegroup']
-    VALID_THUMBNAIL_SIZES = [250, 500, 1200]
 
     if util.SNI_SUPPORTED:
-        URL = 'https://coverartarchive.org/release/{mbid}'
-        GROUP_URL = 'https://coverartarchive.org/release-group/{mbid}'
+        URL = 'https://coverartarchive.org/release/{mbid}/front'
+        GROUP_URL = 'https://coverartarchive.org/release-group/{mbid}/front'
     else:
-        URL = 'http://coverartarchive.org/release/{mbid}'
-        GROUP_URL = 'http://coverartarchive.org/release-group/{mbid}'
+        URL = 'http://coverartarchive.org/release/{mbid}/front'
+        GROUP_URL = 'http://coverartarchive.org/release-group/{mbid}/front'
 
     def get(self, album, plugin, paths):
         """Return the Cover Art Archive and Cover Art Archive release group URLs
         using album MusicBrainz release ID and release group ID.
         """
-
-        def get_image_urls(url, size_suffix=None):
-            try:
-                response = self.request(url)
-            except requests.RequestException:
-                self._log.debug(u'{0}: error receiving response'
-                                .format(self.NAME))
-                return
-
-            try:
-                data = response.json()
-            except ValueError:
-                self._log.debug(u'{0}: error loading response: {1}'
-                                .format(self.NAME, response.text))
-                return
-
-            for item in data.get('images', []):
-                try:
-                    if 'Front' not in item['types']:
-                        continue
-
-                    if size_suffix:
-                        yield item['thumbnails'][size_suffix]
-                    else:
-                        yield item['image']
-                except KeyError:
-                    pass
-
-        release_url = self.URL.format(mbid=album.mb_albumid)
-        release_group_url = self.GROUP_URL.format(mbid=album.mb_releasegroupid)
-
-        # Cover Art Archive API offers pre-resized thumbnails at several sizes.
-        # If the maxwidth config matches one of the already available sizes
-        # fetch it directly intead of fetching the full sized image and
-        # resizing it.
-        size_suffix = None
-        if plugin.maxwidth in self.VALID_THUMBNAIL_SIZES:
-            size_suffix = "-" + str(plugin.maxwidth)
-
-        if 'release' in self.match_by and album.mb_albumid:
-            for url in get_image_urls(release_url, size_suffix):
-                yield self._candidate(url=url, match=Candidate.MATCH_EXACT)
-
-        if 'releasegroup' in self.match_by and album.mb_releasegroupid:
-            for url in get_image_urls(release_group_url):
-                yield self._candidate(url=url, match=Candidate.MATCH_FALLBACK)
+        if 'release' in self.match_by and hasattr(album, 'mb_albumid') and album.mb_albumid:
+            yield self._candidate(url=self.URL.format(mbid=album.mb_albumid),
+                                  match=Candidate.MATCH_EXACT)
+        if 'releasegroup' in self.match_by and hasattr(album, 'mb_releasegroupid') and album.mb_releasegroupid:
+            yield self._candidate(
+                url=self.GROUP_URL.format(mbid=album.mb_releasegroupid),
+                match=Candidate.MATCH_FALLBACK)
 
 
 class Amazon(RemoteArtSource):
@@ -412,7 +375,6 @@ class AlbumArtOrg(RemoteArtSource):
         else:
             self._log.debug(u'no image found on page')
 
-
 class GoogleImages(RemoteArtSource):
     NAME = u"Google Images"
     URL = u'https://www.googleapis.com/customsearch/v1'
@@ -458,6 +420,7 @@ class GoogleImages(RemoteArtSource):
             for item in data['items']:
                 yield self._candidate(url=item['link'],
                                       match=Candidate.MATCH_EXACT)
+
 
 
 class FanartTV(RemoteArtSource):
@@ -857,8 +820,7 @@ class LastFM(RemoteArtSource):
 # Try each source in turn.
 
 SOURCES_ALL = [u'filesystem',
-               u'coverart', u'itunes', u'amazon', u'albumart',
-               u'wikipedia', u'google', u'fanarttv', u'lastfm']
+               u'google']
 
 ART_SOURCES = {
     u'filesystem': FileSystem,
@@ -869,7 +831,7 @@ ART_SOURCES = {
     u'wikipedia': Wikipedia,
     u'google': GoogleImages,
     u'fanarttv': FanartTV,
-    u'lastfm': LastFM,
+    u'lastfm': LastFM
 }
 SOURCE_NAMES = {v: k for k, v in ART_SOURCES.items()}
 
@@ -992,7 +954,7 @@ class FetchArtPlugin(plugins.BeetsPlugin, RequestMixin):
                 # For any other choices (e.g., TRACKS), do nothing.
                 return
 
-            candidate = self.art_for_album(task.album, task.paths, local)
+            candidate = self.art_for_album(task.match.info, task.paths, local)
 
             if candidate:
                 self.art_candidates[task] = candidate

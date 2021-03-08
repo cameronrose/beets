@@ -131,11 +131,12 @@ def track_distance(item, track_info, incl_artist=False):
     dist = hooks.Distance()
 
     # Length.
-    if track_info.length:
-        diff = abs(item.length - track_info.length) - \
-            config['match']['track_length_grace'].as_number()
-        dist.add_ratio('track_length', diff,
-                       config['match']['track_length_max'].as_number())
+    if hasattr(track_info, 'length'):
+        if track_info.length:
+            diff = abs(item.length - track_info.length) - \
+                config['match']['track_length_grace'].as_number()
+            dist.add_ratio('track_length', diff,
+                        config['match']['track_length_max'].as_number())
 
     # Title.
     dist.add_string('track_title', item.title, track_info.title)
@@ -355,7 +356,7 @@ def _add_candidate(items, results, info):
               info.artist, info.album, info.album_id)
 
     # Discard albums with zero tracks.
-    if not info.tracks:
+    if not info.tracks and info.data_source != 'bandcamp':
         log.debug(u'No tracks.')
         return
 

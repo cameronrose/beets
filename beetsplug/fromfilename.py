@@ -23,6 +23,7 @@ from beets.util import displayable_path
 import os
 import re
 import six
+from os.path import basename
 
 
 # Filename field extraction patterns.
@@ -123,6 +124,7 @@ def apply_matches(d):
 
     # Apply the title and track.
     for item in d:
+        item.album = os.path.basename(os.path.dirname(item.path)).decode("utf-8") 
         if bad_title(item.title):
             item.title = six.text_type(d[item][title_field])
         if 'track' in d[item] and item.track == 0:

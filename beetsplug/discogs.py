@@ -14,18 +14,21 @@
 # included in all copies or substantial portions of the Software.
 
 """Adds Discogs album search support to the autotagger. Requires the
-python3-discogs-client library.
+discogs-client library.
 """
 from __future__ import division, absolute_import, print_function
 
 import beets.ui
 from beets import config
 from beets.autotag.hooks import AlbumInfo, TrackInfo
+from beets import plugins
+from beetsplug import fetchart
 from beets.plugins import MetadataSourcePlugin, BeetsPlugin, get_distance
 import confuse
 from discogs_client import Release, Master, Client
 from discogs_client.exceptions import DiscogsAPIError
 from requests.exceptions import ConnectionError
+import six
 from six.moves import http_client
 import beets
 import re
@@ -38,7 +41,7 @@ from string import ascii_lowercase
 
 
 USER_AGENT = u'beets/{0} +https://beets.io/'.format(beets.__version__)
-API_KEY = 'rAzVUQYRaoFjeBjyWuWZ'
+API_KEY    = 'rAzVUQYRaoFjeBjyWuWZ'
 API_SECRET = 'plxtUTqoCzwxZpqdPysCwGuBSmZNdZVy'
 
 # Exceptions that discogs_client should really handle but does not.
@@ -55,16 +58,23 @@ class DiscogsPlugin(BeetsPlugin):
             'apikey': API_KEY,
             'apisecret': API_SECRET,
             'tokenfile': 'discogs_token.json',
-            'source_weight': 0.5,
+            'source_weight': 0.1,
             'user_token': '',
             'separator': u', ',
             'index_tracks': False,
+            'art': True,
         })
         self.config['apikey'].redact = True
         self.config['apisecret'].redact = True
         self.config['user_token'].redact = True
         self.discogs_client = None
         self.register_listener('import_begin', self.setup)
+
+        if self.config['collection']['folderindex'].as_number():
+            self.register_listener('album_imported', self.album_added)
+        
+        self.register_listener('pluginload', self.loaded)
+
         self.rate_limit_per_minute = 25
         self.last_request_timestamp = 0
 
@@ -96,6 +106,31 @@ class DiscogsPlugin(BeetsPlugin):
 
         self.discogs_client = Client(USER_AGENT, c_key, c_secret,
                                      token, secret)
+    def loaded(self):
+        # Add our own artsource to the fetchart plugin.
+        # FIXME: This is ugly, but i didn't find another way to extend fetchart
+        # without declaring a new plugin.
+        if self.config['art']:
+            for plugin in plugins.find_plugins():
+                if isinstance(plugin, fetchart.FetchArtPlugin):
+                    plugin.sources = [DiscogsAlbumArt(plugin._log, self.discogs_client)] + plugin.sources
+                    fetchart.ART_SOURCES['discogs'] = DiscogsAlbumArt
+                    fetchart.SOURCE_NAMES[DiscogsAlbumArt] = 'discogs'
+                    break
+
+    def album_added(self, lib, album):
+        me = self.discogs_client.identity()
+        foldername = self.config['collection']['folderindex'].as_number()
+
+        try:
+            folder = me.collection_folders[foldername]
+            folder.add_release(album.discogs_albumid)
+        except DiscogsAPIError as e:
+            self._log.debug(u'API Error: {0} (query: {1})', e, 'add_release')
+            if e.status_code == 401:
+                self.reset_auth()
+        except CONNECTION_ERRORS:
+            self._log.debug(u'Connection error in album search', exc_info=True)
 
     def _time_to_next_request(self):
         seconds_between_requests = 60 / self.rate_limit_per_minute
@@ -245,7 +280,8 @@ class DiscogsPlugin(BeetsPlugin):
         query = re.sub(r'(?u)\W+', ' ', query).encode('ascii', "replace")
         # Strip medium information from query, Things like "CD1" and "disk 1"
         # can also negate an otherwise positive result.
-        query = re.sub(br'(?i)\b(CD|disc)\s*\d+', b'', query)
+        query = re.sub(br'(?i)\b(CD|disc)\s*', b'', query)
+        query = re.sub(br'(?i)\b(EP)\s*', b'', query)
 
         self.request_start()
         try:
@@ -257,7 +293,7 @@ class DiscogsPlugin(BeetsPlugin):
             self._log.debug(u"Communication error while searching for {0!r}",
                             query, exc_info=True)
             return []
-        return [album for album in map(self.get_album_info, releases[:5])
+        return [album for album in map(self.get_album_info, releases[:7])
                 if album]
 
     def get_master_year(self, master_id):
@@ -308,6 +344,10 @@ class DiscogsPlugin(BeetsPlugin):
         )
         album = re.sub(r' +', ' ', result.title)
         album_id = result.data['id']
+
+        image_url = ''
+        if result.data.get('images'):
+            image_url = result.data['images'][0]['resource_url']
         # Use `.data` to access the tracklist directly instead of the
         # convenient `.tracklist` property, which will strip out useful artist
         # information and leave us with skeleton `Artist` objects that will
@@ -362,10 +402,12 @@ class DiscogsPlugin(BeetsPlugin):
                          label=label, mediums=len(set(mediums)),
                          releasegroup_id=master_id, catalognum=catalogno,
                          country=country, style=style, genre=genre,
+                         discogs_genre=genre, discogs_style=style,
                          media=media, original_year=original_year,
                          data_source='Discogs', data_url=data_url,
                          discogs_albumid=discogs_albumid,
-                         discogs_labelid=labelid, discogs_artistid=artist_id)
+                         discogs_labelid=labelid, discogs_artistid=artist_id, 
+                         discogs_albumimageurl=image_url)
 
     def format(self, classification):
         if classification:
@@ -418,6 +460,10 @@ class DiscogsPlugin(BeetsPlugin):
                 except IndexError:
                     pass
                 index_tracks[index + 1] = track['title']
+            
+            # if track['artists']:
+            #     for track_artist in track['artists']:
+            #         track.discogs_artistid = track_artist.id
 
         # Fix up medium and medium_index for each track. Discogs position is
         # unreliable, but tracks are in order.
@@ -463,6 +509,7 @@ class DiscogsPlugin(BeetsPlugin):
             index_count += 1
             medium_count = 1 if medium_count == 0 else medium_count
             track.medium, track.medium_index = medium_count, index_count
+            
 
         # Get `disctitle` from Discogs index tracks. Assume that an index track
         # before the first track of each medium is a disc title.
@@ -505,12 +552,6 @@ class DiscogsPlugin(BeetsPlugin):
                         for subtrack in subtracks:
                             if not subtrack.get('artists'):
                                 subtrack['artists'] = index_track['artists']
-                    # Concatenate index with track title when index_tracks
-                    # option is set
-                    if self.config['index_tracks']:
-                        for subtrack in subtracks:
-                            subtrack['title'] = '{}: {}'.format(
-                                    index_track['title'], subtrack['title'])
                     tracklist.extend(subtracks)
             else:
                 # Merge the subtracks, pick a title, and append the new track.
@@ -563,16 +604,15 @@ class DiscogsPlugin(BeetsPlugin):
         title = track['title']
         if self.config['index_tracks']:
             prefix = ', '.join(divisions)
-            if prefix:
-                title = '{}: {}'.format(prefix, title)
+            title = ': '.join([prefix, title])
         track_id = None
         medium, medium_index, _ = self.get_track_index(track['position'])
-        artist, artist_id = MetadataSourcePlugin.get_artist(
+        artist, discogs_artistid = MetadataSourcePlugin.get_artist(
             track.get('artists', [])
         )
         length = self.get_track_length(track['duration'])
         return TrackInfo(title=title, track_id=track_id, artist=artist,
-                         artist_id=artist_id, length=length, index=index,
+                         discogs_artistid=discogs_artistid, length=length, index=index,
                          medium=medium, medium_index=medium_index)
 
     def get_track_index(self, position):
@@ -612,3 +652,14 @@ class DiscogsPlugin(BeetsPlugin):
         except ValueError:
             return None
         return length.tm_min * 60 + length.tm_sec
+
+class DiscogsAlbumArt(fetchart.RemoteArtSource):
+    NAME = u"Discogs"
+
+    def get(self, album, plugin, paths):
+        """Return the url for the cover from the Discogs release.
+        This only returns cover art urls for Discogs releases (by id).
+        """
+        if hasattr(album, 'data_source') and album.data_source == 'Discogs' and hasattr(album, 'discogs_albumimageurl') and album.discogs_albumimageurl != '':
+            yield self._candidate(url=album.discogs_albumimageurl,
+                                    match=fetchart.Candidate.MATCH_EXACT)

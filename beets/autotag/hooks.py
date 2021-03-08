@@ -607,26 +607,7 @@ def album_candidates(items, artist, album, va_likely, extra_tags):
     the album is likely to be a "various artists" release. ``extra_tags``
     is an optional dictionary of additional tags used to further
     constrain the search.
-    """
-
-    # Base candidates if we have album and artist to match.
-    if artist and album:
-        try:
-            for candidate in mb.match_album(artist, album, len(items),
-                                            extra_tags):
-                yield candidate
-        except mb.MusicBrainzAPIError as exc:
-            exc.log(log)
-
-    # Also add VA matches from MusicBrainz where appropriate.
-    if va_likely and album:
-        try:
-            for candidate in mb.match_album(None, album, len(items),
-                                            extra_tags):
-                yield candidate
-        except mb.MusicBrainzAPIError as exc:
-            exc.log(log)
-
+    """  
     # Candidates from plugins.
     for candidate in plugins.candidates(items, artist, album, va_likely,
                                         extra_tags):
@@ -639,15 +620,6 @@ def item_candidates(item, artist, title):
     ``artist`` and ``title`` are strings and either reflect the item or
     are specified by the user.
     """
-
-    # MusicBrainz candidates.
-    if artist and title:
-        try:
-            for candidate in mb.match_track(artist, title):
-                yield candidate
-        except mb.MusicBrainzAPIError as exc:
-            exc.log(log)
-
     # Plugin candidates.
     for candidate in plugins.item_candidates(item, artist, title):
         yield candidate

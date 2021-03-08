@@ -40,7 +40,7 @@ from beets import library
 from beets import config
 from beets import logging
 import six
-from . import _store_dict
+from . import _store_dict, _store_favs
 
 VARIOUS_ARTISTS = u'Various Artists'
 PromptChoice = namedtuple('PromptChoice', ['short', 'long', 'callback'])
@@ -1053,6 +1053,12 @@ import_cmd.parser.add_option(
     callback=_store_dict,
     metavar='FIELD=VALUE',
     help=u'set the given fields to the supplied values'
+)
+import_cmd.parser.add_option(
+    u'--favs', dest='favs', action='callback',
+    callback=_store_favs,
+    metavar='FAV',
+    help=u'set the favourite tracks for the import'
 )
 import_cmd.func = import_func
 default_commands.append(import_cmd)

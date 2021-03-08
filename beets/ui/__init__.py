@@ -805,6 +805,20 @@ def _store_dict(option, opt_str, value, parser):
 
     option_values[key] = value
 
+def _store_favs(option, opt_str, value, parser):
+    """Custom action callback to parse options which have ``favs``
+    """
+    dest = option.dest
+    option_values = getattr(parser.values, dest, None)
+
+    if option_values is None:
+        # This is the first supplied ``filepath`` of option.
+        # Initialize empty list and get a reference to it.
+        setattr(parser.values, dest, list())
+        option_values = getattr(parser.values, dest)
+    
+    option_values.append(value)
+    #config['import']['favs'].append(value)
 
 class CommonOptionsParser(optparse.OptionParser, object):
     """Offers a simple way to add common formatting options.
@@ -1137,9 +1151,6 @@ def _setup(options, lib=None):
 
     Returns a list of subcommands, a list of plugins, and a library instance.
     """
-    # Configure the MusicBrainz API.
-    mb.configure()
-
     config = _configure(options)
 
     plugins = _load_plugins(options, config)
