@@ -5,13 +5,11 @@ The ``fetchart`` plugin retrieves album art images from various sources on the
 Web and stores them as image files.
 
 To use the ``fetchart`` plugin, first enable it in your configuration (see
-:ref:`using-plugins`). Then, install the `requests`_ library by typing::
+:ref:`using-plugins`). Then, install ``beets`` with ``fetchart`` extra
 
-    pip install requests
+.. code-block:: bash
 
-The plugin uses `requests`_ to fetch album art from the Web.
-
-.. _requests: https://requests.readthedocs.io/en/master/
+    pip install "beets[fetchart]"
 
 Fetching Album Art During Import
 --------------------------------
@@ -41,13 +39,23 @@ file. The available options are:
   considered as valid album art candidates. Default: 0.
 - **maxwidth**: A maximum image width to downscale fetched images if they are
   too big. The resize operation reduces image width to at most ``maxwidth``
-  pixels. The height is recomputed so that the aspect ratio is preserved.
+  pixels. The height is recomputed so that the aspect ratio is preserved. See
+  the section on :ref:`cover-art-archive-maxwidth` below for additional
+  information regarding the Cover Art Archive source.
+  Default: 0 (no maximum is enforced).
 - **quality**: The JPEG quality level to use when compressing images (when
   ``maxwidth`` is set). This should be either a number from 1 to 100 or 0 to
   use the default quality. 65–75 is usually a good starting point. The default
   behavior depends on the imaging tool used for scaling: ImageMagick tries to
   estimate the input image quality and uses 92 if it cannot be determined, and
   PIL defaults to 75.
+  Default: 0 (disabled)
+- **max_filesize**: The maximum size of a target piece of cover art in bytes.
+  When using an ImageMagick backend this sets
+  ``-define jpeg:extent=max_filesize``. Using PIL this will reduce JPG quality
+  by up to 50% to attempt to reach the target filesize. Neither method is
+  *guaranteed* to reach the target size, however in most cases it should
+  succeed.
   Default: 0 (disabled)
 - **enforce_ratio**: Only images with a width:height ratio of 1:1 are
   considered as valid album art candidates if set to ``yes``.
@@ -79,6 +87,14 @@ file. The available options are:
 - **high_resolution**: If enabled, fetchart retrieves artwork in the highest
   resolution it can find (warning: image files can sometimes reach >20MB).
   Default: ``no``.
+- **deinterlace**: If enabled, `Pillow`_ or `ImageMagick`_ backends are
+  instructed to store cover art as non-progressive JPEG. You might need this if
+  you use DAPs that don't support progressive images.
+  Default: ``no``.
+- **cover_format**: If enabled, forced the cover image into the specified
+  format. Most often, this will be either ``JPEG`` or ``PNG`` [#imgformats]_.
+  Also respects ``deinterlace``.
+  Default: None (leave unchanged).
 
 Note: ``maxwidth`` and ``enforce_ratio`` options require either `ImageMagick`_
 or `Pillow`_.
@@ -94,6 +110,12 @@ or `Pillow`_.
 .. _beets custom search engine: https://cse.google.com.au:443/cse/publicurl?cx=001442825323518660753:hrh5ch1gjzm
 .. _Pillow: https://github.com/python-pillow/Pillow
 .. _ImageMagick: https://www.imagemagick.org/
+.. [#imgformats] Other image formats are available, though the full list
+   depends on your system and what backend you are using. If you're using the
+   ImageMagick backend, you can use ``magick identify -list format`` to get a
+   full list of all supported formats, and you can use the Python function
+   PIL.features.pilinfo() to print a list of all supported formats in Pillow
+   (``python3 -c 'import PIL.features as f; f.pilinfo()'``).
 
 Here's an example that makes plugin select only images that contain ``front`` or
 ``back`` keywords in their filenames and prioritizes the iTunes source over
@@ -219,19 +241,46 @@ in your configuration.
 
 .. _registering a personal fanart.tv API key: https://fanart.tv/get-an-api-key/
 
-More detailed information can be found `on their blog`_. Specifically, the
+More detailed information can be found `on their Wiki`_. Specifically, the
 personal key will give you earlier access to new art.
 
-.. _on their blog: https://fanart.tv/2015/01/personal-api-keys/
+.. _on their Wiki: https://wiki.fanart.tv/General/personal%20api/
 
 Last.fm
 '''''''
 
 To use the Last.fm backend, you need to `register for a Last.fm API key`_. Set
 the ``lastfm_key`` configuration option to your API key, then add ``lastfm`` to
-the list of sources in your configutation.
+the list of sources in your configuration.
 
 .. _register for a Last.fm API key: https://www.last.fm/api/account/create
+
+Spotify
+'''''''
+
+Spotify backend is enabled by default and will update album art if a valid Spotify album id is found.
+
+.. _pip: https://pip.pypa.io
+.. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+
+Cover Art URL
+'''''''''''''
+
+The `fetchart` plugin can also use a flexible attribute field ``cover_art_url``
+where you can manually specify the image URL to be used as cover art. Any custom
+plugin can use this field to provide the cover art and ``fetchart`` will use it
+as a source.
+
+.. _cover-art-archive-maxwidth:
+
+Cover Art Archive Pre-sized Thumbnails
+--------------------------------------
+
+The CAA provides pre-sized thumbnails of width 250, 500, and 1200 pixels. If you
+set the `maxwidth` option to one of these values, the corresponding image will
+be downloaded, saving `beets` the need to scale down the image. It can also
+speed up the downloading process, as some cover arts can sometimes be very
+large.
 
 Storing the Artwork's Source
 ----------------------------

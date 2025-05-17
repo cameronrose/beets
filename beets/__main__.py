@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of beets.
 # Copyright 2017, Adrian Sampson.
 #
@@ -17,9 +16,8 @@
 `python -m beets`.
 """
 
-from __future__ import division, absolute_import, print_function
-
 import sys
+
 from .ui import main
 
 if __name__ == "__main__":

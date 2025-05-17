@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of beets.
 # Copyright 2016, Heinz Wiesinger.
 #
@@ -13,30 +12,26 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Synchronize information from music player libraries
-"""
+"""Synchronize information from music player libraries"""
 
-from __future__ import division, absolute_import, print_function
-
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 from importlib import import_module
 
 from confuse import ConfigValueError
+
 from beets import ui
 from beets.plugins import BeetsPlugin
-import six
 
-
-METASYNC_MODULE = 'beetsplug.metasync'
+METASYNC_MODULE = "beetsplug.metasync"
 
 # Dictionary to map the MODULE and the CLASS NAME of meta sources
 SOURCES = {
-    'amarok': 'Amarok',
-    'itunes': 'Itunes',
+    "amarok": "Amarok",
+    "itunes": "Itunes",
 }
 
 
-class MetaSource(six.with_metaclass(ABCMeta, object)):
+class MetaSource(metaclass=ABCMeta):
     def __init__(self, config, log):
         self.item_types = {}
         self.config = config
@@ -48,13 +43,13 @@ class MetaSource(six.with_metaclass(ABCMeta, object)):
 
 
 def load_meta_sources():
-    """ Returns a dictionary of all the MetaSources
+    """Returns a dictionary of all the MetaSources
     E.g., {'itunes': Itunes} with isinstance(Itunes, MetaSource) true
     """
     meta_sources = {}
 
     for module_path, class_name in SOURCES.items():
-        module = import_module(METASYNC_MODULE + '.' + module_path)
+        module = import_module(METASYNC_MODULE + "." + module_path)
         meta_sources[class_name.lower()] = getattr(module, class_name)
 
     return meta_sources
@@ -64,8 +59,7 @@ META_SOURCES = load_meta_sources()
 
 
 def load_item_types():
-    """ Returns a dictionary containing the item_types of all the MetaSources
-    """
+    """Returns a dictionary containing the item_types of all the MetaSources"""
     item_types = {}
     for meta_source in META_SOURCES.values():
         item_types.update(meta_source.item_types)
@@ -73,42 +67,50 @@ def load_item_types():
 
 
 class MetaSyncPlugin(BeetsPlugin):
-
     item_types = load_item_types()
 
     def __init__(self):
-        super(MetaSyncPlugin, self).__init__()
+        super().__init__()
 
     def commands(self):
-        cmd = ui.Subcommand('metasync',
-                            help='update metadata from music player libraries')
-        cmd.parser.add_option('-p', '--pretend', action='store_true',
-                              help='show all changes but do nothing')
-        cmd.parser.add_option('-s', '--source', default=[],
-                              action='append', dest='sources',
-                              help='comma-separated list of sources to sync')
+        cmd = ui.Subcommand(
+            "metasync", help="update metadata from music player libraries"
+        )
+        cmd.parser.add_option(
+            "-p",
+            "--pretend",
+            action="store_true",
+            help="show all changes but do nothing",
+        )
+        cmd.parser.add_option(
+            "-s",
+            "--source",
+            default=[],
+            action="append",
+            dest="sources",
+            help="comma-separated list of sources to sync",
+        )
         cmd.parser.add_format_option()
         cmd.func = self.func
         return [cmd]
 
     def func(self, lib, opts, args):
-        """Command handler for the metasync function.
-        """
+        """Command handler for the metasync function."""
         pretend = opts.pretend
         query = ui.decargs(args)
 
         sources = []
         for source in opts.sources:
-            sources.extend(source.split(','))
+            sources.extend(source.split(","))
 
-        sources = sources or self.config['source'].as_str_seq()
+        sources = sources or self.config["source"].as_str_seq()
 
         meta_source_instances = {}
         items = lib.items(query)
 
         # Avoid needlessly instantiating meta sources (can be expensive)
         if not items:
-            self._log.info(u'No items found matching query')
+            self._log.info("No items found matching query")
             return
 
         # Instantiate the meta sources
@@ -116,18 +118,18 @@ class MetaSyncPlugin(BeetsPlugin):
             try:
                 cls = META_SOURCES[player]
             except KeyError:
-                self._log.error(u'Unknown metadata source \'{0}\''.format(
-                    player))
+                self._log.error("Unknown metadata source '{}'".format(player))
 
             try:
                 meta_source_instances[player] = cls(self.config, self._log)
             except (ImportError, ConfigValueError) as e:
-                self._log.error(u'Failed to instantiate metadata source '
-                                u'\'{0}\': {1}'.format(player, e))
+                self._log.error(
+                    f"Failed to instantiate metadata source {player!r}: {e}"
+                )
 
         # Avoid needlessly iterating over items
         if not meta_source_instances:
-            self._log.error(u'No valid metadata sources found')
+            self._log.error("No valid metadata sources found")
             return
 
         # Sync the items with all of the meta sources

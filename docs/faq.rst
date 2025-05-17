@@ -6,7 +6,7 @@ Got a question that isn't answered here? Try the `discussion board`_, or
 :ref:`filing an issue <bugs>` in the bug tracker.
 
 .. _mailing list: https://groups.google.com/group/beets-users
-.. _discussion board: https://discourse.beets.io
+.. _discussion board: https://github.com/beetbox/beets/discussions/
 
 .. contents::
     :local:
@@ -58,6 +58,12 @@ with the ``%if{}`` function to accomplish this::
         default: $albumartist/$album%aunique{}/%if{$multidisc,Disc $disc/}$track $title
     item_fields:
         multidisc: 1 if disctotal > 1 else 0
+
+This ``paths`` configuration only contains the
+``default`` key: it leaves the ``comp`` and ``singleton`` keys as their
+default values, as documented in :ref:`path-format-config`.
+To create "Disc N" directories for compilations and singletons, you will need
+to specify similar templates for those keys as well.
 
 
 .. _multidisc:
@@ -137,16 +143,27 @@ it's helpful to run on the "bleeding edge". To run the latest source:
    ``pip uninstall beets``.
 2. Install from source. Choose one of these methods:
 
+   -  Directly from GitHub using
+      ``python -m pip install git+https://github.com/beetbox/beets.git``
+      command. Depending on your system, you may need to use ``pip3``
+      and ``python3`` instead of ``pip`` and ``python`` respectively.
    -  Use ``pip`` to install the latest snapshot tarball. Type:
       ``pip install https://github.com/beetbox/beets/tarball/master``
-   -  Grab the source using git. First, clone the repository:
-      ``git clone https://github.com/beetbox/beets.git``.
-      Then, ``cd beets`` and ``python setup.py install``.
    -  Use ``pip`` to install an "editable" version of beets based on an
       automatic source checkout. For example, run
       ``pip install -e git+https://github.com/beetbox/beets#egg=beets``
       to clone beets and install it, allowing you to modify the source
       in-place to try out changes.
+   -  Clone source code and install it in editable mode
+
+      .. code-block:: shell
+
+         git clone https://github.com/beetbox/beets.git
+         poetry install
+
+      This approach lets you decide where the
+      source is stored, with any changes immediately reflected in your
+      environment.
 
 More details about the beets source are available on the :doc:`developer documentation </dev/index>`
 pages.
@@ -157,9 +174,8 @@ pages.
 …report a bug in beets?
 -----------------------
 
-We use the `issue tracker <https://github.com/beetbox/beets/issues>`__
-on GitHub. `Enter a new issue <https://github.com/beetbox/beets/issues/new>`__
-there to report a bug. Please follow these guidelines when reporting an issue:
+We use the `issue tracker`_ on GitHub where you can `open a new ticket`_.
+Please follow these guidelines when reporting an issue:
 
 -  Most importantly: if beets is crashing, please `include the
    traceback <https://imgur.com/jacoj>`__. Tracebacks can be more
@@ -189,6 +205,7 @@ If you've never reported a bug before, Mozilla has some well-written
 `general guidelines for good bug
 reports`_.
 
+.. _issue tracker: https://github.com/beetbox/beets/issues
 .. _general guidelines for good bug reports: https://developer.mozilla.org/en-US/docs/Mozilla/QA/Bug_writing_guidelines
 
 
@@ -326,11 +343,11 @@ read the file. You can also use specialized programs for checking file
 integrity---for example, type ``metaflac --list music.flac`` to check
 FLAC files.
 
-If beets still complains about a file that seems to be valid, `file a
-bug <https://github.com/beetbox/beets/issues/new>`__ and we'll look into
-it. There's always a possibility that there's a bug "upstream" in the
-`Mutagen <https://github.com/quodlibet/mutagen>`__ library used by beets,
-in which case we'll forward the bug to that project's tracker.
+If beets still complains about a file that seems to be valid, `open a new
+ticket`_ and we'll look into it. There's always a possibility that there's
+a bug "upstream" in the `Mutagen <https://github.com/quodlibet/mutagen>`__
+library used by beets, in which case we'll forward the bug to that project's
+tracker.
 
 
 .. _importhang:
@@ -381,3 +398,5 @@ try `this Super User answer`_.
 
 .. _this Super User answer: https://superuser.com/a/284361/4569
 .. _pip: https://pip.pypa.io/en/stable/
+.. _open a new ticket:
+   https://github.com/beetbox/beets/issues/new?template=bug-report.md

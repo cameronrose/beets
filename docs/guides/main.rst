@@ -10,13 +10,13 @@ Installing
 ----------
 
 You will need Python.
-Beets works on `Python 2.7`_ and Python 3.4 or later.
+Beets works on Python 3.8 or later.
 
-.. _Python 2.7: https://www.python.org/download/
-
-* **macOS** v10.7 (Lion) and later include Python 2.7 out of the box.
-  You can opt for Python 3 by installing it via `Homebrew`_:
-  ``brew install python3``
+* **macOS** 11 (Big Sur) includes Python 3.8 out of the box.
+  You can opt for a more recent Python installing it via `Homebrew`_
+  (``brew install python3``).
+  There's also a `MacPorts`_ port. Run ``port install beets`` or
+  ``port install beets-full`` to include many third-party plugins.
 
 * On **Debian or Ubuntu**, depending on the version, beets is available as an
   official package (`Debian details`_, `Ubuntu details`_), so try typing:
@@ -26,9 +26,12 @@ Beets works on `Python 2.7`_ and Python 3.4 or later.
   as described below by running:
   ``apt-get install python-dev python-pip``
 
-* On **Arch Linux**, `beets is in [community] <Arch community_>`_, so just run ``pacman -S
+* On **Arch Linux**, `beets is in [extra] <Arch extra_>`_, so just run ``pacman -S
   beets``. (There's also a bleeding-edge `dev package <AUR_>`_ in the AUR, which will
   probably set your computer on fire.)
+
+* On **Alpine Linux**, `beets is in the community repository <Alpine package_>`_
+  and can be installed with ``apk add beets``.
 
 * For **Gentoo Linux**, beets is in Portage as ``media-sound/beets``. Just run
   ``emerge beets`` to install. There are several USE flags available for
@@ -40,23 +43,23 @@ Beets works on `Python 2.7`_ and Python 3.4 or later.
 
 * For **Slackware**, there's a `SlackBuild`_ available.
 
-* On **Fedora** 22 or later, there is a `DNF package`_::
-
-      $ sudo dnf install beets beets-plugins beets-doc
+* On **Fedora** 22 or later, there's a `DNF package`_ you can install with ``sudo dnf install beets beets-plugins beets-doc``.
 
 * On **Solus**, run ``eopkg install beets``.
 
 * On **NixOS**, there's a `package <NixOS_>`_ you can install with ``nix-env -i beets``.
 
-.. _DNF package: https://apps.fedoraproject.org/packages/beets
+.. _DNF package: https://packages.fedoraproject.org/pkgs/beets/
 .. _SlackBuild: https://slackbuilds.org/repository/14.2/multimedia/beets/
 .. _FreeBSD: http://portsmon.freebsd.org/portoverview.py?category=audio&portname=beets
 .. _AUR: https://aur.archlinux.org/packages/beets-git/
 .. _Debian details: https://tracker.debian.org/pkg/beets
 .. _Ubuntu details: https://launchpad.net/ubuntu/+source/beets
 .. _OpenBSD: http://openports.se/audio/beets
-.. _Arch community: https://www.archlinux.org/packages/community/any/beets/
+.. _Arch extra: https://archlinux.org/packages/extra/any/beets/
+.. _Alpine package: https://pkgs.alpinelinux.org/package/edge/community/x86_64/beets
 .. _NixOS: https://github.com/NixOS/nixpkgs/tree/master/pkgs/tools/audio/beets
+.. _MacPorts: https://www.macports.org
 
 If you have `pip`_, just say ``pip install beets`` (or ``pip install --user
 beets`` if you run into permissions problems).
@@ -73,14 +76,14 @@ new versions.
 
 .. _@b33ts: https://twitter.com/b33ts
 
-Installing on macOS 10.11 and Higher
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Installing by Hand on macOS 10.11 and Higher
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Starting with version 10.11 (El Capitan), macOS has a new security feature
 called `System Integrity Protection`_ (SIP) that prevents you from modifying
-some parts of the system. This means that some ``pip`` commands may fail with
-a permissions error. (You probably *won't* run into this if you've installed
-Python yourself with `Homebrew`_ or otherwise.)
+some parts of the system. This means that some ``pip`` commands may fail with a
+permissions error. (You probably *won't* run into this if you've installed
+Python yourself with `Homebrew`_ or otherwise. You can also try `MacPorts`_.)
 
 If this happens, you can install beets for the current user only by typing
 ``pip install --user beets``. If you do that, you might want to add
@@ -95,16 +98,18 @@ Installing on Windows
 Installing beets on Windows can be tricky. Following these steps might help you
 get it right:
 
-1. If you don't have it, `install Python`_ (you want Python 3.6). The
+1. If you don't have it, `install Python`_ (you want at least Python 3.8). The
    installer should give you the option to "add Python to PATH." Check this
    box. If you do that, you can skip the next step.
 
 2. If you haven't done so already, set your ``PATH`` environment variable to
-   include Python and its scripts. To do so, you have to get the "Properties"
-   window for "My Computer", then choose the "Advanced" tab, then hit the
-   "Environment Variables" button, and then look for the ``PATH`` variable in
-   the table. Add the following to the end of the variable's value:
-   ``;C:\Python36;C:\Python36\Scripts``. You may need to adjust these paths to
+   include Python and its scripts. To do so, open the "Settings" application, 
+   then access the "System" screen, then access the "About" tab, and then hit 
+   "Advanced system settings" located on the right side of the screen. This 
+   should open the "System Properties" screen, then select the "Advanced" tab, 
+   then hit the "Environmental Variables..." button, and then look for the PATH 
+   variable in the table. Add the following to the end of the variable's value: 
+   ``;C:\Python38;C:\Python38\Scripts``. You may need to adjust these paths to 
    point to your Python installation.
 
 3. Now install beets by running: ``pip install beets``
@@ -127,6 +132,19 @@ trouble or you have more detail to contribute here, please direct it to
 .. _install pip: https://pip.pypa.io/en/stable/installing/
 .. _get-pip.py: https://bootstrap.pypa.io/get-pip.py
 
+Installing on ARM (Raspberry Pi and similar)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Beets on ARM devices is not recommended for Linux novices. If you are
+comfortable with light troubleshooting in tools like ``pip``, ``make``,
+and beets' command-line binary dependencies (e.g. ``ffmpeg`` and
+``ImageMagick``), you will probably be okay on ARM devices like the
+Raspberry Pi. We have `notes for ARM`_ and an `older ARM reference`_.
+Beets is generally developed on x86-64 based devices, and most plugins
+target that platform as well.
+
+.. _notes for ARM: https://github.com/beetbox/beets/discussions/4910
+.. _older ARM reference: https://discourse.beets.io/t/diary-of-beets-on-arm-odroid-hc4-armbian/1993
 
 Configuring
 -----------
@@ -180,6 +198,11 @@ here, including the directory and file naming scheme. See
 :doc:`/reference/config` for a full reference.
 
 .. _YAML: https://yaml.org/
+
+To check that you've set up your configuration how you want it, you can type
+``beet version`` to see a list of enabled plugins or ``beet config`` to get a
+complete listing of your current configuration.
+
 
 Importing Your Library
 ----------------------
@@ -297,9 +320,12 @@ You can always get help using the ``beet help`` command. The plain ``beet help``
 command lists all the available commands; then, for example, ``beet help
 import`` gives more specific help about the ``import`` command.
 
-Please let me know what you think of beets via `the discussion board`_ or
-`Twitter`_.
+If you need more of a walkthrough, you can read an illustrated one `on the
+beets blog <https://beets.io/blog/walkthrough.html>`_.
+
+Please let us know what you think of beets via `the discussion board`_ or
+`Mastodon`_.
 
 .. _the mailing list: https://groups.google.com/group/beets-users
-.. _the discussion board: https://discourse.beets.io
-.. _twitter: https://twitter.com/b33ts
+.. _the discussion board: https://github.com/beetbox/beets/discussions
+.. _mastodon: https://fosstodon.org/@beets

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of beets.
 # Copyright 2016, Adrian Sampson.
 #
@@ -13,16 +12,23 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-from __future__ import division, absolute_import, print_function
+
+import warnings
 
 import mediafile
 
-import warnings
-warnings.warn("beets.mediafile is deprecated; use mediafile instead")
+warnings.warn(
+    "beets.mediafile is deprecated; use mediafile instead",
+    # Show the location of the `import mediafile` statement as the warning's
+    # source, rather than this file, such that the offending module can be
+    # identified easily.
+    stacklevel=2,
+)
 
 # Import everything from the mediafile module into this module.
 for key, value in mediafile.__dict__.items():
-    if key not in ['__name__']:
+    if key not in ["__name__"]:
         globals()[key] = value
 
+# Cleanup namespace.
 del key, value, warnings, mediafile

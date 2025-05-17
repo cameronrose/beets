@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of beets.
 # Copyright 2016, Philippe Mongeau.
 #
@@ -13,18 +12,15 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Get a random song or album from the library.
-"""
-from __future__ import division, absolute_import, print_function
+"""Get a random song or album from the library."""
 
 from beets.plugins import BeetsPlugin
-from beets.ui import Subcommand, decargs, print_
 from beets.random import random_objs
+from beets.ui import Subcommand, decargs, print_
 
 
 def random_func(lib, opts, args):
-    """Select some random items or albums and print the results.
-    """
+    """Select some random items or albums and print the results."""
     # Fetch all the objects matching the query into a list.
     query = decargs(args)
     if opts.album:
@@ -33,23 +29,35 @@ def random_func(lib, opts, args):
         objs = list(lib.items(query))
 
     # Print a random subset.
-    objs = random_objs(objs, opts.album, opts.number, opts.time,
-                       opts.equal_chance)
+    objs = random_objs(
+        objs, opts.album, opts.number, opts.time, opts.equal_chance
+    )
     for obj in objs:
         print_(format(obj))
 
 
-random_cmd = Subcommand('random',
-                        help=u'choose a random track or album')
+random_cmd = Subcommand("random", help="choose a random track or album")
 random_cmd.parser.add_option(
-    u'-n', u'--number', action='store', type="int",
-    help=u'number of objects to choose', default=1)
+    "-n",
+    "--number",
+    action="store",
+    type="int",
+    help="number of objects to choose",
+    default=1,
+)
 random_cmd.parser.add_option(
-    u'-e', u'--equal-chance', action='store_true',
-    help=u'each artist has the same chance')
+    "-e",
+    "--equal-chance",
+    action="store_true",
+    help="each artist has the same chance",
+)
 random_cmd.parser.add_option(
-    u'-t', u'--time', action='store', type="float",
-    help=u'total length in minutes of objects to choose')
+    "-t",
+    "--time",
+    action="store",
+    type="float",
+    help="total length in minutes of objects to choose",
+)
 random_cmd.parser.add_all_common_options()
 random_cmd.func = random_func
 

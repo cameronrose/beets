@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of beets.
 # Copyright 2019, Jack Wilsdon <jack.wilsdon@gmail.com>
 #
@@ -13,34 +12,34 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Load SQLite extensions.
-"""
+"""Load SQLite extensions."""
 
-from __future__ import division, absolute_import, print_function
+import sqlite3
 
 from beets.dbcore import Database
 from beets.plugins import BeetsPlugin
-import sqlite3
 
 
 class LoadExtPlugin(BeetsPlugin):
     def __init__(self):
-        super(LoadExtPlugin, self).__init__()
+        super().__init__()
 
         if not Database.supports_extensions:
-            self._log.warn('loadext is enabled but the current SQLite '
-                           'installation does not support extensions')
+            self._log.warn(
+                "loadext is enabled but the current SQLite "
+                "installation does not support extensions"
+            )
             return
 
-        self.register_listener('library_opened', self.library_opened)
+        self.register_listener("library_opened", self.library_opened)
 
     def library_opened(self, lib):
         for v in self.config:
             ext = v.as_filename()
 
-            self._log.debug(u'loading extension {}', ext)
+            self._log.debug("loading extension {}", ext)
 
             try:
                 lib.load_extension(ext)
             except sqlite3.OperationalError as e:
-                self._log.error(u'failed to load extension {}: {}', ext, e)
+                self._log.error("failed to load extension {}: {}", ext, e)

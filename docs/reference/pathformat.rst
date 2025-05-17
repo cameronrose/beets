@@ -60,6 +60,7 @@ These functions are built in to beets:
 
 * ``%lower{text}``: Convert ``text`` to lowercase.
 * ``%upper{text}``: Convert ``text`` to UPPERCASE.
+* ``%capitalize{text}``: Make the first letter of ``text`` UPPERCASE and the rest lowercase.
 * ``%title{text}``: Convert ``text`` to Title Case.
 * ``%left{text,n}``: Return the first ``n`` characters of ``text``.
 * ``%right{text,n}``: Return the last ``n`` characters of  ``text``.
@@ -73,6 +74,8 @@ These functions are built in to beets:
   option.
 * ``%aunique{identifiers,disambiguators,brackets}``: Provides a unique string
   to disambiguate similar albums in the database. See :ref:`aunique`, below.
+* ``%sunique{identifiers,disambiguators,brackets}``: Similarly, a unique string
+  to disambiguate similar singletons in the database. See :ref:`sunique`, below.
 * ``%time{date_time,format}``: Return the date and time in any format accepted
   by `strftime`_. For example, to get the year some music was added to your
   library, use ``%time{$added,%Y}``.
@@ -145,6 +148,18 @@ its import time. Only the second album will receive a disambiguation string. If
 you want to add the disambiguation string to both albums, just run ``beet move``
 (possibly restricted by a query) to update the paths for the albums.
 
+.. _sunique:
+
+Singleton Disambiguation
+------------------------
+
+It is also possible to have singleton tracks with the same name and the same
+artist. Beets provides the ``%sunique{}`` template to avoid giving these
+tracks the same file path.
+
+It has the same arguments as the :ref:`%aunique <aunique>` template, but the default
+values are different. The default identifiers are ``artist title`` and the
+default disambiguators are ``year trackdisambig``.
 
 Syntax Details
 --------------
@@ -158,7 +173,7 @@ write a function call. To escape any of these characters (except ``{``, and
 
 * ``${``, which is ambiguous with the variable reference syntax (like
   ``${title}``). To insert a ``{`` alone, it's always sufficient to just type
-  ``{``.
+  ``{``. You do, however need to use ``$`` to escape a closing brace ``$}``.
 * commas are used as argument separators in function calls. Inside of a
   function's argument, use ``$,`` to get a literal ``,`` character. Outside of
   any function argument, escaping is not necessary: ``,`` by itself will
@@ -235,6 +250,9 @@ Audio information:
 
 * length (in seconds)
 * bitrate (in kilobits per second, with units: e.g., "192kbps")
+* bitrate_mode (e.g., "CBR", "VBR" or "ABR", only available for the MP3 format)
+* encoder_info (e.g., "LAME 3.97.0", only available for some formats)
+* encoder_settings (e.g., "-V2", only available for the MP3 format)
 * format (e.g., "MP3" or "FLAC")
 * channels
 * bitdepth (only available for some formats)
